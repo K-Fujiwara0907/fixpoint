@@ -40,8 +40,7 @@ t1 = time.time()
 access_log_list = glob.glob("./*access_log*.txt")
 host_count_dict = {}
 host_count_list = []
-time_count_dict = {}
-time_count_list = []
+time_total = {}
 
 date_flag = False
 
@@ -58,34 +57,48 @@ else:
     print("search all accesses")
 
 t1 = time.time()
-append = host_count_list.append
-for i in range(5):
-    for access_log in access_log_list:
 
-        with open(access_log, mode="r") as f:
+append_host = host_count_list.append
+
+for access_log in access_log_list:
+
+    with open(access_log, mode="r") as f:
                         
-            for line in f:
-                line_split = line.split(" ")
-                date_split = line_split[3][1:].split(":")
+        for line in f:
+            line_split = line.split(" ")
+            date_split = line_split[3][1:].split(":")
                 
-                if date_flag and confirm_date(date_split[0], start, end):
-                    continue
+            if date_flag and confirm_date(date_split[0], start, end):
+                continue
                 
-                append((date_split[0],date_split[1],line_split[0]))
-                
-                    
+            append_host((date_split[0],date_split[1],line_split[0]))                   
 
-                if sys.getsizeof(host_count_list) > 500000000:
-                    if not host_count_dict:
-                        host_count_dict = collections.Counter(host_count_list)
-                    else:
-                        every_count(host_count_dict, host_count_list)
-                    host_count_list.clear()
+            if sys.getsizeof(host_count_list) > 500000000:
+                if not host_count_dict:
+                    host_count_dict = collections.Counter(host_count_list)
+
+                else:
+                    every_count(host_count_dict, host_count_list)
+
+                host_count_list.clear()
 
 every_count(host_count_dict, host_count_list)
 
 t2 = time.time()
 print("processing time",t2-t1)
-
 for host, count in sorted(host_count_dict.items(), key=lambda x:(x[0][0], x[0][1], -x[1])):
-    print(host,count)
+    key = (host[0],host[1])
+    if key in time_total:
+        time_total[key] = time_total[key] + count
+    else:
+        time_total[key] = count
+
+old_key = []
+for host, count in sorted(host_count_dict.items(), key=lambda x:(x[0][0], x[0][1], -x[1])):
+    key = (host[0],host[1])
+    if old_key == key:
+        print(host[2], count)
+    else:
+        print(key,time_total[key])
+        print(host[2], count)
+    old_key = key
